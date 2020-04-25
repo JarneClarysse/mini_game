@@ -9,6 +9,9 @@
 #include <iostream>
 #include <Shader.h>
 #include <stb_image.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 float mix = 0.5f;
 
@@ -45,7 +48,6 @@ int main(void)
     GLFWwindow* window;
     GLuint vertex_buffer1;
 
-
     //initialisation and setup of window
     glfwSetErrorCallback(error_callback);
 
@@ -74,6 +76,10 @@ int main(void)
     glfwSwapInterval(1);
 
    
+    //vector creation
+  
+
+
 
     Shader ourShader("C:/Users/jarne/source/repos/mini_game/mini_game/shaders/vshader.s", "C:/Users/jarne/source/repos/mini_game/mini_game/shaders/fshader.s");
 
@@ -155,19 +161,23 @@ int main(void)
         8 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE,
+    /*glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE,
         8 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
+    glEnableVertexAttribArray(1);*/
 
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(1);
     ourShader.use();
     glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"), 0);
     glUniform1i(glGetUniformLocation(ourShader.ID, "texture2"), 1);
     
+    unsigned int transformLoc = glGetUniformLocation(ourShader.ID, "transform");
+
 
     while (!glfwWindowShouldClose(window))
     {
+        
+
         float ratio;
         int width, height;
 
@@ -184,11 +194,19 @@ int main(void)
         glBindTexture(GL_TEXTURE_2D, texture2);
 
         ourShader.use();
-        ourShader.setFloat("mixVar", mix);
+
+        glm::mat4 trans = glm::mat4(1.0f);
+        trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
+        trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
+        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
 
         glBindVertexArray(VAO1);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-       
+
+        trans = glm::mat4(1.0f);
+        trans = glm::translate(trans, glm::vec3(-0.5f, 0.5f, 0.0f));
+        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
