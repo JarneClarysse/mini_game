@@ -19,18 +19,25 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\fshader_gouraud.s">
+      <FileType>CppCode</FileType>
+    </None>
     <ClCompile Include="src\glad.c" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\stb_import.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\camera.h" />
     <ClInclude Include="include\linmath.h" />
     <ClInclude Include="include\Shader.h" />
     <ClInclude Include="include\stb_image.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\fshader.s" />
+    <None Include="shaders\fshader2.s" />
     <None Include="shaders\vshader.s" />
+    <None Include="shaders\vshader2.s" />
+    <None Include="shaders\vshader_gouraud.s" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
