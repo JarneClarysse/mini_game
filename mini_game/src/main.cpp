@@ -13,7 +13,14 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
+using namespace std;
+
 float mix = 0.5f;
+
 
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
@@ -27,6 +34,65 @@ bool firstMouse = true;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
+struct Vertex {
+    glm::vec3 Position;
+    glm::vec3 Normal;
+    glm::vec2 TexCoords;
+
+    glm::vec3 Tangent;
+    glm::vec3 Bitangent;
+};
+
+struct Texture {
+    unsigned int id;
+    string type;
+    string path;
+
+};
+
+
+
+class Mesh {
+    public:
+        //mesh data
+        vector<Vertex>  vertices;
+        vector<unsigned int> indices;
+        vector<Texture> textures;
+
+        Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures);
+        void Draw(Shader &shader);
+
+    private:
+        unsigned int VAO, VBO, EBO;
+        void setupMesh();
+
+};
+
+class Model {
+    public: 
+        //model data
+        vector<Mesh> meshes;
+        string directory;
+        vector<Texture> textures_loaded;
+        bool gammaCorrection;
+
+        Model(const char* path, bool gamma = false) : gammaCorrection(gamma)
+        {
+            loadModel(path);
+        }
+        void Draw(Shader& shader);
+    private:
+        
+
+        void loadModel(string path);
+        void processNode(aiNode* node, const aiScene *scene);
+        Mesh processMesh(aiMesh* mesh, const aiScene* scene);
+        vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, string typeName);
+
+
+};
+
+unsigned int TextureFromFile(const char* path, const string& directory, bool gamma = false);
 // utility function for loading a 2D texture from file
 // ---------------------------------------------------
 unsigned int loadTexture(char const* path)
@@ -159,131 +225,15 @@ int main(void)
     glEnable(GL_DEPTH_TEST);
     glfwSwapInterval(1);
 
-   
+    // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
+    stbi_set_flip_vertically_on_load(true);
+
     
 
     Shader cubeShader("C:/Users/jarne/source/repos/mini_game/mini_game/shaders/vshader.s", "C:/Users/jarne/source/repos/mini_game/mini_game/shaders/fshader.s");
-    Shader lampShader("C:/Users/jarne/source/repos/mini_game/mini_game/shaders/vshader2.s", "C:/Users/jarne/source/repos/mini_game/mini_game/shaders/fshader2.s");
-    // creation of buffers
 
-    float vertices[] = {
-        // positions          // normals           // texture coords
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
-        0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  0.0f,
-        0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
-        0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
-
-        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
-        0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  0.0f,
-        0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
-        0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
-
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
-        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
-
-        0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
-        0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
-        0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-        0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-        0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
-
-        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
-        0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  1.0f,
-        0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
-        0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
-
-        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,
-        0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  1.0f,
-        0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
-        0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
-    };
-
-
-    glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
-
-    glm::vec3 objectColor(1.0f, 0.5f, 0.31f);
-    glm::vec3 lightColor( 1.0f, 1.0f, 1.0f);
-
-    glm::vec3 cubePositions[] = {
-     glm::vec3(0.0f,  0.0f,  0.0f),
-     glm::vec3(2.0f,  5.0f, -15.0f),
-     glm::vec3(-1.5f, -2.2f, -2.5f),
-     glm::vec3(-3.8f, -2.0f, -12.3f),
-     glm::vec3(2.4f, -0.4f, -3.5f),
-     glm::vec3(-1.7f,  3.0f, -7.5f),
-     glm::vec3(1.3f, -2.0f, -2.5f),
-     glm::vec3(1.5f,  2.0f, -2.5f),
-     glm::vec3(1.5f,  0.2f, -1.5f),
-     glm::vec3(-1.3f,  1.0f, -1.5f)
-    };
-
-    glm::vec3 pointLightPositions[] = {
-        glm::vec3(0.7f,  0.2f,  2.0f),
-        glm::vec3(2.3f, -3.3f, -4.0f),
-        glm::vec3(-4.0f,  2.0f, -12.0f),
-        glm::vec3(0.0f,  0.0f, -3.0f)
-    };
-
-  
-    unsigned int vertex_buffer1, VAO1;
-    glGenBuffers(1, &vertex_buffer1);
-    glGenVertexArrays(1, &VAO1);
-
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer1);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glBindVertexArray(VAO1);
-
-    // position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    // normal attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-
-    // texture attribute
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    glEnableVertexAttribArray(2);
-
-    //lightsource
-    unsigned int lightVAO;
-    glGenVertexArrays(1, &lightVAO);
-    glBindVertexArray(lightVAO);
-
-    // we only need to bind to the VBO, the container's VBO's data already contains the data.
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer1);
-    
-    // set the vertex attribute 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    
-    glEnable(GL_DEPTH_TEST);
-
-    unsigned int diffuseMap = loadTexture("C:/Users/jarne/source/repos/mini_game/mini_game/textures/container2.png");
-    unsigned int specularMap = loadTexture("C:/Users/jarne/source/repos/mini_game/mini_game/textures/container2_specular.png");
-    unsigned int emissionMap = loadTexture("C:/Users/jarne/source/repos/mini_game/mini_game/textures/matrix.jpg");
-
-    // shader configuration
-    // --------------------
-    cubeShader.use();
-    cubeShader.setInt("material.diffuse", 0);
-    cubeShader.setInt("material.specular", 1);
-    cubeShader.setInt("material.emission", 2);
+    std::cout << "loading model" << std::endl;
+    Model ourModel("C:/Users/jarne/source/repos/mini_game/mini_game/models/backpack/backpack.obj",false);
 
     while (!glfwWindowShouldClose(window))
     {
@@ -295,134 +245,27 @@ int main(void)
 
         processInput(window);
 
-        glm::mat4 model = glm::mat4(1.0f);
-        glm::mat4 view = camera.GetViewMatrix();
-        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-
-        lightPos = glm::vec3(1.2f* sin(currentFrame), 1.0f*cos(currentFrame), 2.0f* cos(currentFrame));
-
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClearColor(0.0f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glm::vec3 lightColor(1,1,1);
-        /*
-        lightColor.x = sin(glfwGetTime() * 2.0f);
-        lightColor.y = sin(glfwGetTime() * 0.7f);
-        lightColor.z = sin(glfwGetTime() * 1.3f);*/
-
-        glm::vec3 diffuseColor = lightColor * glm::vec3(0.5f);
-        glm::vec3 ambientColor = diffuseColor * glm::vec3(0.1f);
-
         cubeShader.use();
-        /*cubeShader.setVec3("material.ambient", 0.0f, 0.1f, 0.6f);
-        cubeShader.setVec3("material.diffuse", 0.0f, 0.50980392f, 0.50980392f);
-        cubeShader.setVec3("material.specular", 0.50196078f, 0.50196078f, 0.50196078f);*/
-        cubeShader.setVec3("viewPos", camera.Position);
+
+        glm::mat4 view = camera.GetViewMatrix();
+        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
         cubeShader.setFloat("material.shininess", 32.0f);
-
-        /*
-          Here we set all the uniforms for the 5/6 types of lights we have. We have to set them manually and index
-          the proper PointLight struct in the array to set each uniform variable. This can be done more code-friendly
-          by defining light types as classes and set their values in there, or by using a more efficient uniform approach
-          by using 'Uniform buffer objects', but that is something we'll discuss in the 'Advanced GLSL' tutorial.
-       */
-       // directional light
-        cubeShader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
-        cubeShader.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
-        cubeShader.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
-        cubeShader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
-        //cube light 1
-        cubeShader.setVec3("pointLights[0].position", pointLightPositions[0]);
-        cubeShader.setVec3("pointLights[0].ambient", 0.05f, 0.05f, 0.05f);
-        cubeShader.setVec3("pointLights[0].diffuse", 0.8f, 0.8f, 0.8f);
-        cubeShader.setVec3("pointLights[0].specular", 1.0f, 1.0f, 1.0f);
-        cubeShader.setFloat("pointLights[0].constant", 1.0f);
-        cubeShader.setFloat("pointLights[0].linear", 0.09);
-        cubeShader.setFloat("pointLights[0].quadratic", 0.032);
-        //cube light 2
-        cubeShader.setVec3("pointLights[1].position", pointLightPositions[1]);
-        cubeShader.setVec3("pointLights[1].ambient", 0.05f, 0.05f, 0.05f);
-        cubeShader.setVec3("pointLights[1].diffuse", 0.8f, 0.8f, 0.8f);
-        cubeShader.setVec3("pointLights[1].specular", 1.0f, 1.0f, 1.0f);
-        cubeShader.setFloat("pointLights[1].constant", 1.0f);
-        cubeShader.setFloat("pointLights[1].linear", 0.09);
-        cubeShader.setFloat("pointLights[1].quadratic", 0.032);
-        //cube light 3
-        cubeShader.setVec3("pointLights[2].position", pointLightPositions[2]);
-        cubeShader.setVec3("pointLights[2].ambient", 0.05f, 0.05f, 0.05f);
-        cubeShader.setVec3("pointLights[2].diffuse", 0.8f, 0.8f, 0.8f);
-        cubeShader.setVec3("pointLights[2].specular", 1.0f, 1.0f, 1.0f);
-        cubeShader.setFloat("pointLights[2].constant", 1.0f);
-        cubeShader.setFloat("pointLights[2].linear", 0.09);
-        cubeShader.setFloat("pointLights[2].quadratic", 0.032);
-        //cube light 4
-        cubeShader.setVec3("pointLights[3].position", pointLightPositions[3]);
-        cubeShader.setVec3("pointLights[3].ambient", 0.05f, 0.05f, 0.05f);
-        cubeShader.setVec3("pointLights[3].diffuse", 0.8f, 0.8f, 0.8f);
-        cubeShader.setVec3("pointLights[3].specular", 1.0f, 1.0f, 1.0f);
-        cubeShader.setFloat("pointLights[3].constant", 1.0f);
-        cubeShader.setFloat("pointLights[3].linear", 0.09);
-        cubeShader.setFloat("pointLights[3].quadratic", 0.032);
-        // spotLight
-        cubeShader.setVec3("spotLight.position", camera.Position);
-        cubeShader.setVec3("spotLight.direction", camera.Front);
-        cubeShader.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
-        cubeShader.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
-        cubeShader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
-        cubeShader.setFloat("spotLight.constant", 1.0f);
-        cubeShader.setFloat("spotLight.linear", 0.09);
-        cubeShader.setFloat("spotLight.quadratic", 0.032);
-        cubeShader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
-        cubeShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
-
-
-
-        //cubeShader.setVec3("light.position", glm::vec3(view* glm::vec4(lightPos, 1.0)));
-        cubeShader.setMat4f("view", view);
         cubeShader.setMat4f("projection", projection);
+        cubeShader.setMat4f("view", view);
 
-        // bind diffuse map
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, diffuseMap);
-        // bind specular map
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, specularMap);
-        // bind emission map
-        glActiveTexture(GL_TEXTURE2);
-        glBindTexture(GL_TEXTURE_2D, emissionMap);
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
+        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
 
-        glBindVertexArray(VAO1);
-
-        for (unsigned int i = 0; i < 10; i++)
-        {
-            glm::mat4 model = glm::mat4(1.0f);
-            model = glm::translate(model, cubePositions[i]);
-            float angle = 20.0f * i;
-            model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-            cubeShader.setMat4f("model", model);
-
-            glDrawArrays(GL_TRIANGLES, 0, 36);
-        }
-        //glDrawArrays(GL_TRIANGLES, 0, 36);
-
-        lampShader.use();
-        glBindVertexArray(lightVAO);
-        for (unsigned int i = 0; i < 4; i++)
-        {
-            model = glm::mat4(1.0f);
-            model = glm::translate(model, pointLightPositions[i]);
-            model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
-            lampShader.setMat4f("model", model);
-            lampShader.setMat4f("view", view);
-            lampShader.setMat4f("projection", projection);
-            lampShader.setVec3("lightColor", lightColor);
-
-            glDrawArrays(GL_TRIANGLES, 0, 36);
-        }
+        cubeShader.setMat4f("model", model);
         
-
         
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        ourModel.Draw(cubeShader);
+       
+       
       
 
         glfwSwapBuffers(window);
@@ -435,3 +278,261 @@ int main(void)
     exit(EXIT_SUCCESS);
 }
 
+
+
+Mesh::Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures)
+{
+    this->vertices = vertices;
+    this->indices = indices;
+    this->textures = textures;
+
+    setupMesh();
+}
+
+void Mesh::setupMesh()
+{
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
+
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int),
+        &indices[0], GL_STATIC_DRAW);
+
+    // vertex positions
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+    // vertex normals
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
+    // vertex texture coords
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoords));
+    // vertex tangent
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Tangent));
+    // vertex bitangent
+    glEnableVertexAttribArray(4);
+    glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Bitangent));
+    glBindVertexArray(0);
+}
+
+void Mesh::Draw(Shader& shader)
+{
+    unsigned int diffuseNr = 1;
+    unsigned int specularNr = 1;
+    unsigned int normalNr = 1;
+    unsigned int heightNr = 1;
+    for (unsigned int i = 0; i < textures.size(); i++)
+    {
+        glActiveTexture(GL_TEXTURE0 + i); // activate proper texture unit before binding
+        // retrieve texture number (the N in diffuse_textureN)
+        string number;
+        string prefix = "material.";
+        string name = textures[i].type;
+        if (name == "texture_diffuse")
+            number = std::to_string(diffuseNr++);
+        else if (name == "texture_specular")
+            number = std::to_string(specularNr++);
+        else if (name == "texture_normal")
+            number = std::to_string(normalNr++); // transfer unsigned int to stream
+        else if (name == "texture_height")
+            number = std::to_string(heightNr++);
+
+        glUniform1i(glGetUniformLocation(shader.ID,(prefix+name + number).c_str()), i);
+        glBindTexture(GL_TEXTURE_2D, textures[i].id);
+    }
+
+    // draw mesh
+    glBindVertexArray(VAO);
+    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+    glBindVertexArray(0);
+
+    glActiveTexture(GL_TEXTURE0);
+}
+
+void Model::Draw(Shader& shader)
+{
+    for (unsigned int i = 0; i < meshes.size(); i++)
+        meshes[i].Draw(shader);
+}
+
+void Model::loadModel(string path)
+{
+    Assimp::Importer import;
+    const aiScene* scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
+
+    if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
+    {
+        cout << "ERROR::ASSIMP::" << import.GetErrorString() << endl;
+        return;
+    }
+    directory = path.substr(0, path.find_last_of('/'));
+
+    processNode(scene->mRootNode, scene);
+}
+
+void Model::processNode(aiNode* node, const aiScene* scene)
+{
+    // process all the node's meshes (if any)
+    for (unsigned int i = 0; i < node->mNumMeshes; i++)
+    {
+        aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
+        meshes.push_back(processMesh(mesh, scene));
+    }
+    // then do the same for each of its children
+    for (unsigned int i = 0; i < node->mNumChildren; i++)
+    {
+        processNode(node->mChildren[i], scene);
+    }
+}
+
+Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
+{
+    vector<Vertex> vertices;
+    vector<unsigned int> indices;
+    vector<Texture> textures;
+
+    for (unsigned int i = 0; i < mesh->mNumVertices; i++)
+    {
+        Vertex vertex;
+        // process vertex positions, normals and texture coordinates
+        //positions
+        glm::vec3 vector;
+        vector.x = mesh->mVertices[i].x;
+        vector.y = mesh->mVertices[i].y;
+        vector.z = mesh->mVertices[i].z;
+        vertex.Position = vector;
+
+        //normals
+        vector.x = mesh->mNormals[i].x;
+        vector.y = mesh->mNormals[i].y;
+        vector.z = mesh->mNormals[i].z;
+        vertex.Normal = vector;
+
+        //texture coordinates
+        if (mesh->mTextureCoords[0]) // does the mesh contain texture coordinates?
+        {
+            glm::vec2 vec;
+            vec.x = mesh->mTextureCoords[0][i].x;
+            vec.y = mesh->mTextureCoords[0][i].y;
+            vertex.TexCoords = vec;
+            // tangent
+            vector.x = mesh->mTangents[i].x;
+            vector.y = mesh->mTangents[i].y;
+            vector.z = mesh->mTangents[i].z;
+            vertex.Tangent = vector;
+            // bitangent
+            vector.x = mesh->mBitangents[i].x;
+            vector.y = mesh->mBitangents[i].y;
+            vector.z = mesh->mBitangents[i].z;
+            vertex.Bitangent = vector;
+        }
+        else
+            vertex.TexCoords = glm::vec2(0.0f, 0.0f);
+
+        vertices.push_back(vertex);
+    }
+    // process indices
+    for (unsigned int i = 0; i < mesh->mNumFaces; i++)
+    {
+        aiFace face = mesh->mFaces[i];
+        for (unsigned int j = 0; j < face.mNumIndices; j++)
+            indices.push_back(face.mIndices[j]);
+    }
+
+    // process material
+    if (mesh->mMaterialIndex >= 0)
+    {
+        aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+        vector<Texture> diffuseMaps = loadMaterialTextures(material,
+            aiTextureType_DIFFUSE, "texture_diffuse");
+        textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
+        vector<Texture> specularMaps = loadMaterialTextures(material,
+            aiTextureType_SPECULAR, "texture_specular");
+        textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
+        // 3. normal maps
+        std::vector<Texture> normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal");
+        textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
+        // 4. height maps
+        std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height");
+        textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
+    }
+
+    return Mesh(vertices, indices, textures);
+}
+
+vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type, string typeName)
+{
+    vector<Texture> textures;
+    for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
+    {
+        aiString str;
+        mat->GetTexture(type, i, &str);
+        bool skip = false;
+        for (unsigned int j = 0; j < textures_loaded.size(); j++)
+        {
+            if (std::strcmp(textures_loaded[j].path.data(), str.C_Str()) == 0)
+            {
+                textures.push_back(textures_loaded[j]);
+                skip = true;
+                break;
+            }
+        }
+        if (!skip) {
+            Texture texture;
+            texture.id = TextureFromFile(str.C_Str(), directory);
+            texture.type = typeName;
+            texture.path = str.C_Str();
+            textures.push_back(texture);
+            textures_loaded.push_back(texture);
+        }
+        
+    }
+    return textures;
+}
+
+unsigned int TextureFromFile(const char* path, const string& directory, bool gamma)
+{
+    string filename = string(path);
+    filename = directory + '/' + filename;
+
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+
+    int width, height, nrComponents;
+    unsigned char* data = stbi_load(filename.c_str(), &width, &height, &nrComponents, 0);
+    if (data)
+    {
+        GLenum format;
+        if (nrComponents == 1)
+            format = GL_RED;
+        else if (nrComponents == 3)
+            format = GL_RGB;
+        else if (nrComponents == 4)
+            format = GL_RGBA;
+
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        stbi_image_free(data);
+    }
+    else
+    {
+        std::cout << "Texture failed to load at path: " << path << std::endl;
+        stbi_image_free(data);
+    }
+
+    return textureID;
+}
