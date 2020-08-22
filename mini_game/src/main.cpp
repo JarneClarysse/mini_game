@@ -237,46 +237,60 @@ int main(void)
     float cubeVertices[] = {
         // back face
         -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // bottom-left
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right     
          0.5f, -0.5f, -0.5f,  1.0f, 0.0f, // bottom-right    
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right              
+                  
          0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // bottom-left  
         -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // bottom-left                
+                      
         // front face
         -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-right   
          0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // top-right
-         0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-right        
+              
          0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // top-right
+        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f, // top-left    
         -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
-        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f, // top-left        
+            
         // left face
         -0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-right
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-left   
         -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-left
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-left       
+         
+
         -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-left
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-right
         -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-right
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-right
+        
         // right face
          0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-left
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right      
-         0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right          
          0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right
-         0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right      
+          
+         0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right
          0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-left
+         0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
+         
         // bottom face          
         -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
+         0.5f, -0.5f, -0.5f,  1.0f, 1.0f, // top-left 
          0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-left
-         0.5f, -0.5f, -0.5f,  1.0f, 1.0f, // top-left        
+             
+
          0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-left
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
         -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-right
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
+        
         // top face
         -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // bottom-right 
          0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // bottom-right                 
+                         
          0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f  // top-left  
         -0.5f,  0.5f,  0.5f,  0.0f, 0.0f, // bottom-left  
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f  // top-left              
+                    
     };
     
     float planeVertices[] = {
@@ -355,9 +369,9 @@ int main(void)
     unsigned int floorTexture = loadTexture(("C:/Users/jarne/source/repos/mini_game/mini_game/textures/metal.png"));
     unsigned int grassTexture = loadTexture(("C:/Users/jarne/source/repos/mini_game/mini_game/textures/blending_transparent_window.png"));
 
-
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_FRONT);
+    glFrontFace(GL_CW);
 
     // shader configuration
     // --------------------
@@ -415,7 +429,7 @@ int main(void)
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
         //grass
-
+        /*
         std::map<float, glm::vec3> sorted;
         for (unsigned int i = 0; i < vegetation.size(); i++)
         {
@@ -431,7 +445,7 @@ int main(void)
             model = glm::translate(model, it->second);
             shader.setMat4f("model", model);
             glDrawArrays(GL_TRIANGLES, 0, 6);
-        }
+        }*/
 
         
        
