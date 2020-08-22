@@ -50,5 +50,7 @@
     </None>
     <None Include="shaders\basicfshader.s" />
     <None Include="shaders\basicvshader.s" />
+    <None Include="shaders\skyfshader.s" />
+    <None Include="shaders\skyvshader.s" />
   </ItemGroup>
 </Project>

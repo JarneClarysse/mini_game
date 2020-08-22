@@ -37,6 +37,8 @@
   <ItemGroup>
     <None Include="shaders\fshader.s" />
     <None Include="shaders\fshader2.s" />
+    <None Include="shaders\skyfshader.s" />
+    <None Include="shaders\skyvshader.s" />
     <None Include="shaders\vshader.s" />
     <None Include="shaders\vshader2.s" />
     <None Include="shaders\vshader_gouraud.s" />
