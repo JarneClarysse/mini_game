@@ -48,5 +48,7 @@
     <None Include="shaders\fshader_gouraud.s">
       <Filter>Source Files</Filter>
     </None>
+    <None Include="shaders\basicfshader.s" />
+    <None Include="shaders\basicvshader.s" />
   </ItemGroup>
 </Project>

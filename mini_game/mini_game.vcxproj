@@ -19,8 +19,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\basicfshader.s" />
+    <None Include="shaders\basicvshader.s" />
     <None Include="shaders\fshader_gouraud.s">
-      <FileType>CppCode</FileType>
+      <FileType>Document</FileType>
     </None>
     <ClCompile Include="src\glad.c" />
     <ClCompile Include="src\main.cpp" />
