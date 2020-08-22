@@ -17,6 +17,5 @@ float LinearizeDepth(float depth)
 
 void main()
 {    
-    
-    FragColor =  texture(texture1,TexCoords);
+    FragColor = texture(texture1, TexCoords);
 }
