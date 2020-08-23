@@ -59,12 +59,13 @@ class Mesh {
         vector<Vertex>  vertices;
         vector<unsigned int> indices;
         vector<Texture> textures;
+        unsigned int VAO, VBO, EBO;
 
         Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures);
         void Draw(Shader &shader);
 
     private:
-        unsigned int VAO, VBO, EBO;
+        
         void setupMesh();
 
 };
@@ -265,6 +266,7 @@ int main(void)
     Shader quadshader("C:/Users/jarne/source/repos/mini_game/mini_game/shaders/basicvshader.s", "C:/Users/jarne/source/repos/mini_game/mini_game/shaders/basicfshader.s");
     Shader stencilShader("C:/Users/jarne/source/repos/mini_game/mini_game/shaders/vshader2.s", "C:/Users/jarne/source/repos/mini_game/mini_game/shaders/fshader2.s");
     Shader skyboxShader("C:/Users/jarne/source/repos/mini_game/mini_game/shaders/skyvshader.s", "C:/Users/jarne/source/repos/mini_game/mini_game/shaders/skyfshader.s");
+    Shader instanceShader("C:/Users/jarne/source/repos/mini_game/mini_game/shaders/instancevshader.s", "C:/Users/jarne/source/repos/mini_game/mini_game/shaders/fshader.s");
 
 
     float cubeVertices[] = {
@@ -325,87 +327,74 @@ int main(void)
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glBindVertexArray(0);
-   
 
-
-    // load textures
-    // -------------
-    unsigned int cubeTexture = loadTexture(("C:/Users/jarne/source/repos/mini_game/mini_game/textures/container.jpg"));
-    unsigned int floorTexture = loadTexture(("C:/Users/jarne/source/repos/mini_game/mini_game/textures/metal.png"));
-    unsigned int grassTexture = loadTexture(("C:/Users/jarne/source/repos/mini_game/mini_game/textures/blending_transparent_window.png"));
+    Model rock = Model("C:/Users/jarne/source/repos/mini_game/mini_game/models/rock/rock.obj", false);
+    Model planet = Model("C:/Users/jarne/source/repos/mini_game/mini_game/models/planet/planet.obj", false);
     
-    vector<std::string> faces
-    {
-        "C:/Users/jarne/source/repos/mini_game/mini_game/textures/skybox/right.jpg",
-        "C:/Users/jarne/source/repos/mini_game/mini_game/textures/skybox/left.jpg",
-        "C:/Users/jarne/source/repos/mini_game/mini_game/textures/skybox/top.jpg",
-        "C:/Users/jarne/source/repos/mini_game/mini_game/textures/skybox/bottom.jpg",
-        "C:/Users/jarne/source/repos/mini_game/mini_game/textures/skybox/front.jpg",
-        "C:/Users/jarne/source/repos/mini_game/mini_game/textures/skybox/back.jpg"
-        
-        
-    };
-    unsigned int cubemapTexture = loadCubemap(faces);
-
-    float skyboxVertices[] = {
-        // positions          
-        -1.0f,  1.0f, -1.0f,
-        -1.0f, -1.0f, -1.0f,
-         1.0f, -1.0f, -1.0f,
-         1.0f, -1.0f, -1.0f,
-         1.0f,  1.0f, -1.0f,
-        -1.0f,  1.0f, -1.0f,
-
-        -1.0f, -1.0f,  1.0f,
-        -1.0f, -1.0f, -1.0f,
-        -1.0f,  1.0f, -1.0f,
-        -1.0f,  1.0f, -1.0f,
-        -1.0f,  1.0f,  1.0f,
-        -1.0f, -1.0f,  1.0f,
-
-         1.0f, -1.0f, -1.0f,
-         1.0f, -1.0f,  1.0f,
-         1.0f,  1.0f,  1.0f,
-         1.0f,  1.0f,  1.0f,
-         1.0f,  1.0f, -1.0f,
-         1.0f, -1.0f, -1.0f,
-
-        -1.0f, -1.0f,  1.0f,
-        -1.0f,  1.0f,  1.0f,
-         1.0f,  1.0f,  1.0f,
-         1.0f,  1.0f,  1.0f,
-         1.0f, -1.0f,  1.0f,
-        -1.0f, -1.0f,  1.0f,
-
-        -1.0f,  1.0f, -1.0f,
-         1.0f,  1.0f, -1.0f,
-         1.0f,  1.0f,  1.0f,
-         1.0f,  1.0f,  1.0f,
-        -1.0f,  1.0f,  1.0f,
-        -1.0f,  1.0f, -1.0f,
-
-        -1.0f, -1.0f, -1.0f,
-        -1.0f, -1.0f,  1.0f,
-         1.0f, -1.0f, -1.0f,
-         1.0f, -1.0f, -1.0f,
-        -1.0f, -1.0f,  1.0f,
-         1.0f, -1.0f,  1.0f
-    };
-
-    unsigned int skyVAO, skyVBO;
-    glGenVertexArrays(1, &skyVAO);
-    glGenBuffers(1, &skyVBO);
-    glBindVertexArray(skyVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, skyVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glBindVertexArray(0);
-
+    
     // shader configuration
     // --------------------
-    shader.use();
-    shader.setInt("texture1", 0);
+
+    unsigned int amount = 100000;
+    glm::mat4* modelMatrices;
+    modelMatrices = new glm::mat4[amount];
+    srand(glfwGetTime()); // initialize random seed	
+    float radius = 50.0;
+    float offset = 25.0f;
+    for (unsigned int i = 0; i < amount; i++)
+    {
+        glm::mat4 model = glm::mat4(1.0f);
+        // 1. translation: displace along circle with 'radius' in range [-offset, offset]
+        float angle = (float)i / (float)amount * 360.0f;
+        float displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
+        float x = sin(angle) * radius + displacement;
+        displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
+        float y = displacement * 0.4f; // keep height of field smaller compared to width of x and z
+        displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
+        float z = cos(angle) * radius + displacement;
+        model = glm::translate(model, glm::vec3(x, y, z));
+
+        // 2. scale: scale between 0.05 and 0.25f
+        float scale = (rand() % 20) / 100.0f + 0.05;
+        model = glm::scale(model, glm::vec3(scale));
+
+        // 3. rotation: add random rotation around a (semi)randomly picked rotation axis vector
+        float rotAngle = (rand() % 360);
+        model = glm::rotate(model, rotAngle, glm::vec3(0.4f, 0.6f, 0.8f));
+
+        // 4. now add to list of matrices
+        modelMatrices[i] = model;
+    }
+
+    unsigned int buffer;
+    glGenBuffers(1, &buffer);
+    glBindBuffer(GL_ARRAY_BUFFER, buffer);
+    glBufferData(GL_ARRAY_BUFFER, amount * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
+
+    for (unsigned int i = 0; i < rock.meshes.size(); i++)
+    {
+        unsigned int VAO = rock.meshes[i].VAO;
+        glBindVertexArray(VAO);
+        // vertex attributes
+        std::size_t vec4Size = sizeof(glm::vec4);
+        glEnableVertexAttribArray(3);
+        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)0);
+        glEnableVertexAttribArray(4);
+        glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(1 * vec4Size));
+        glEnableVertexAttribArray(5);
+        glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(2 * vec4Size));
+        glEnableVertexAttribArray(6);
+        glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(3 * vec4Size));
+
+        glVertexAttribDivisor(3, 1);
+        glVertexAttribDivisor(4, 1);
+        glVertexAttribDivisor(5, 1);
+        glVertexAttribDivisor(6, 1);
+
+        glBindVertexArray(0);
+    }
+
+
 
 
     while (!glfwWindowShouldClose(window))
@@ -426,50 +415,52 @@ int main(void)
 
         glEnable(GL_DEPTH_TEST);
 
-
-
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
        
-        
-
+       
       
         shader.use();
 
-        glm::mat4 model = glm::mat4(1.0f);
+
         glm::mat4 view = camera.GetViewMatrix();
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
         shader.setMat4f("view", view);
         shader.setMat4f("projection", projection);   
 
+        instanceShader.use();
+
+        instanceShader.setMat4f("view", view);
+        instanceShader.setMat4f("projection", projection);
+
+        shader.use();
+
         shader.setVec3("cameraPos", camera.Position);
         
-        // cubes
-        glBindVertexArray(cubeVAO);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f));
+        // draw planet
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f, -3.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(4.0f, 4.0f, 4.0f));
         shader.setMat4f("model", model);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        planet.Draw(shader);
 
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(2.0f, 0.0f, 0.0f));
-        shader.setMat4f("model", model);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        glBindVertexArray(0);
+       
 
-        glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
-        skyboxShader.use();
-        view = glm::mat4(glm::mat3(camera.GetViewMatrix()));
-        skyboxShader.setMat4f("view", view);
-        skyboxShader.setMat4f("projection", projection);
-        glBindVertexArray(skyVAO);
+        // draw meteorites
+        instanceShader.use();
+
+        instanceShader.setInt("material.texture_diffuse1", 0);
         glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, rock.textures_loaded[0].id);
+        for (unsigned int i = 0; i < rock.meshes.size(); i++)
+        {
+            glBindVertexArray(rock.meshes[i].VAO);
+            glDrawElementsInstanced(
+                GL_TRIANGLES, rock.meshes[i].indices.size(), GL_UNSIGNED_INT, 0, amount
+            );
+            glBindVertexArray(0);
 
-        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        glBindVertexArray(0);
-        glDepthFunc(GL_LESS); // set depth function back to default
+        }
 
 
   

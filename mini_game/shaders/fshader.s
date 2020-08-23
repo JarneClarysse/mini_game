@@ -1,16 +1,31 @@
 #version 460 core
+struct Material {
+    sampler2D texture_diffuse1;
+    sampler2D texture_diffuse2;
+    sampler2D texture_diffuse3;
+    sampler2D texture_diffuse4;
+    sampler2D texture_specular1;
+    sampler2D texture_specular2;
+    sampler2D texture_specular3;
+    sampler2D texture_specular4;
+    sampler2D texture_normal1;
+    sampler2D texture_normal2;
+    sampler2D texture_normal3;
+    sampler2D texture_normal4;
+    sampler2D texture_height1;
+    sampler2D texture_height2;
+    sampler2D texture_height3;
+    sampler2D texture_height4;
+    float shininess;
+}; 
+uniform Material material;
 out vec4 FragColor;
 
-in vec3 Normal;
-in vec3 Position;
+in vec2 TexCoords;
 
-uniform vec3 cameraPos;
-uniform samplerCube skybox;
+uniform sampler2D texture_diffuse1;
 
 void main()
-{             
-    float ratio = 1.00 / 1.33;
-    vec3 I = normalize(Position - cameraPos);
-    vec3 R = refract(I, normalize(Normal), ratio);
-    FragColor = vec4(texture(skybox, R).rgb, 1.0);
+{    
+    FragColor = texture(material.texture_diffuse1, TexCoords);
 }
